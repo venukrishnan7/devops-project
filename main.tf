@@ -33,7 +33,7 @@ resource "kubernetes_deployment_v1" "task_service" {
       }
       spec {
         container {
-          image             = "task-service:latest"
+          image             = "task-service:v2" # <-- FIXED: Now uses v2
           name              = "task-service"
           image_pull_policy = "IfNotPresent" # Forces K8s to use your local build!
           
@@ -110,6 +110,57 @@ resource "kubernetes_service_v1" "user_service" {
       port        = 80
       target_port = 3001
       node_port   = 30002
+    }
+    type = "NodePort"
+  }
+}
+
+# ==========================================
+# 🌐 FRONTEND SERVICE INFRASTRUCTURE
+# ==========================================
+resource "kubernetes_deployment_v1" "frontend_service" {
+  metadata {
+    name = "frontend-service-deployment"
+  }
+  spec {
+    replicas = 1
+    selector {
+      match_labels = {
+        app = "frontend-service"
+      }
+    }
+    template {
+      metadata {
+        labels = {
+          app = "frontend-service"
+        }
+      }
+      spec {
+        container {
+          image             = "frontend-service:v3" # <-- FIXED: Changed back to latest
+          name              = "frontend-service"
+          image_pull_policy = "IfNotPresent"
+          port {
+            container_port = 80
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service_v1" "frontend_service" {
+  metadata {
+    name = "frontend-service"
+  }
+  spec {
+    selector = {
+      app = "frontend-service"
+    }
+    port {
+      port        = 80
+      target_port = 80
+      node_port   = 30000
     }
     type = "NodePort"
   }
